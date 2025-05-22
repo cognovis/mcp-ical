@@ -266,6 +266,36 @@ class CalendarManager:
         calendars = self.event_store.calendars()
         return [calendar.title() for calendar in calendars]
 
+    def list_calendars_with_sources(self) -> dict[str, list[dict[str, str]]]:
+        """List all available calendars grouped by their source/account
+
+        Returns:
+            dict: A dictionary mapping source names to lists of calendar info
+        """
+        calendars = self.event_store.calendars()
+        default_calendar = self.event_store.defaultCalendarForNewEvents()
+        default_calendar_id = default_calendar.uniqueIdentifier() if default_calendar else None
+        
+        grouped_calendars = {}
+        
+        for calendar in calendars:
+            source = calendar.source()
+            source_name = source.title() if source else "Unknown Source"
+            
+            calendar_info = {
+                "name": calendar.title(),
+                "id": calendar.uniqueIdentifier(),
+                "is_default": calendar.uniqueIdentifier() == default_calendar_id,
+                "source_type": source.sourceType() if source else None
+            }
+            
+            if source_name not in grouped_calendars:
+                grouped_calendars[source_name] = []
+            
+            grouped_calendars[source_name].append(calendar_info)
+        
+        return grouped_calendars
+
     def list_calendars(self) -> list[Any]:
         """List all available calendars
 

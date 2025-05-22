@@ -46,10 +46,29 @@ def get_calendars() -> str:
     """List all available calendars that can be used with calendar operations."""
     try:
         manager = get_calendar_manager()
-        calendars = manager.list_calendar_names()
-        if not calendars:
+        calendars_by_source = manager.list_calendars_with_sources()
+        
+        if not calendars_by_source:
             return "No calendars found"
-        return "Available calendars:\n" + "\n".join(f"- {cal}" for cal in calendars)
+
+        result = "📅 **Available Calendars by Account:**\n\n"
+        
+        for source_name, calendars in calendars_by_source.items():
+            result += f"**{source_name}**\n"
+            
+            for calendar in calendars:
+                calendar_name = calendar["name"]
+                
+                # Add default indicator
+                if calendar["is_default"]:
+                    result += f"  • {calendar_name} ⭐ (default)\n"
+                else:
+                    result += f"  • {calendar_name}\n"
+            
+            result += "\n"
+        
+        return result.rstrip()
+        
     except ValueError as e:
         return str(e)
     except Exception as e:
@@ -58,14 +77,31 @@ def get_calendars() -> str:
 
 @mcp.tool()
 async def list_calendars() -> str:
-    """List all available calendars."""
+    """List all available calendars grouped by account/source."""
     try:
         manager = get_calendar_manager()
-        calendars = manager.list_calendar_names()
-        if not calendars:
+        calendars_by_source = manager.list_calendars_with_sources()
+        
+        if not calendars_by_source:
             return "No calendars found"
 
-        return "Available calendars:\n" + "\n".join(f"- {calendar}" for calendar in calendars)
+        result = "📅 **Available Calendars by Account:**\n\n"
+        
+        for source_name, calendars in calendars_by_source.items():
+            result += f"**{source_name}**\n"
+            
+            for calendar in calendars:
+                calendar_name = calendar["name"]
+                
+                # Add default indicator
+                if calendar["is_default"]:
+                    result += f"  • {calendar_name} ⭐ (default)\n"
+                else:
+                    result += f"  • {calendar_name}\n"
+            
+            result += "\n"
+        
+        return result.rstrip()
 
     except Exception as e:
         return f"Error listing calendars: {str(e)}"
@@ -196,6 +232,32 @@ async def update_event(event_id: str, update_event_request: UpdateEventRequest) 
 
     except Exception as e:
         return f"Error updating event: {str(e)}"
+
+
+@mcp.tool()
+async def delete_event(event_id: str) -> str:
+    """Delete an existing calendar event.
+
+    Before using this tool, make sure to:
+    1. Confirm with the user that they want to delete the event
+    2. For recurring events, note that this will delete all future occurrences
+
+    Args:
+        event_id: Unique identifier of the event to delete
+
+    Returns:
+        str: Success or error message
+    """
+    try:
+        manager = get_calendar_manager()
+        success = manager.delete_event(event_id)
+        if not success:
+            return f"Failed to delete event with ID {event_id}."
+
+        return f"Successfully deleted event with ID {event_id}"
+
+    except Exception as e:
+        return f"Error deleting event: {str(e)}"
 
 
 def main():
