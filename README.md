@@ -25,6 +25,49 @@ Claude: "✨ 📅 Created: Lunch with Sarah Tomorrow, 12:00 PM"
 
 ## ✨ Features
 
+### 📁 Calendar Groups ✨ NEW!
+
+Organize calendars from different sources (iCloud, Google, Office365) into logical collections for streamlined management!
+
+```text
+"Create a Work group with my Office365 and Google work calendars"
+↓
+📂 Created: Work Group
+   📅 Office365 Calendar
+   📅 Google Work Calendar
+
+"What meetings do I have in my Work calendars this week?"
+↓
+📊 Shows events from all calendars in your Work group
+```
+
+#### Calendar Groups Features
+
+- **Cross-Account Support**: Group calendars from different sources (iCloud, Google, Exchange, etc.)
+- **Persistent Storage**: Groups persist between app launches with local JSON storage
+- **Natural Language Queries**: "Show me events from Family calendars next month"
+- **Complete CRUD Operations**: Create, update, delete, and list calendar groups
+- **Flexible Management**: Add/remove individual calendars from existing groups
+
+#### Calendar Groups Examples
+
+```text
+📂 Group Management:
+"Create group 'Fitness' with my Gym and Sports calendars"
+"Add my Project calendar to the Work group"
+"Remove Personal calendar from the Work group"
+
+📅 Group-Based Scheduling:
+"What's my schedule in Family calendars this weekend?"
+"Show me all Work events for next week"
+"List events from my Fitness group today"
+
+🔧 Group Operations:
+"List all my calendar groups"
+"Show me what calendars are in my Work group"
+"Delete the Old Projects group"
+```
+
 ### 📅 Event Creation
 
 Transform natural language into calendar events instantly!
@@ -95,9 +138,10 @@ After: ✨ Meeting rescheduled to 3:00 PM
 
 ### 📊 Calendar Management
 
-- View all available calendars
-- Smart calendar suggestions
-- Seamless Google Calendar integration when configured with iCloud
+- **Enhanced Calendar Listing**: View calendars organized by account with highlighted default calendar
+- **Calendar Groups**: Organize calendars into logical collections across all sources
+- **Smart Calendar Suggestions**: Intelligent recommendations based on context
+- **Seamless Multi-Account Support**: Works with iCloud, Google, Office365, Exchange, and more
 
 > 💡 **Pro Tip**: Since you can create events in custom calendars, if you have your Google Calendar synced with your iCloud Calendar, you can use this MCP server to create events in your Google Calendar too! Just specify the Google calendar when creating/updating events.
 
