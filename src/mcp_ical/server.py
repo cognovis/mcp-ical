@@ -8,6 +8,7 @@ from mcp.server.fastmcp import FastMCP
 
 from .ical import CalendarManager
 from .models import CreateEventRequest, UpdateEventRequest
+from .groups.group_tools import register_group_tools
 
 mcp = FastMCP("Calendar")
 
@@ -199,6 +200,10 @@ async def update_event(event_id: str, update_event_request: UpdateEventRequest) 
 
 def main():
     logger.info("Running mcp-ical server...")
+    
+    # Register group tools
+    register_group_tools(mcp, get_calendar_manager)
+    
     mcp.run(transport="stdio")
 
 
