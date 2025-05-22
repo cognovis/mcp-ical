@@ -194,11 +194,14 @@ Whilst this MCP server can be used with any MCP compatible client, the instructi
 
     > ⚠️ **Critical**: Claude must be launched from the terminal to properly request calendar permissions. Launching directly from Finder will not trigger the permissions prompt.
 
-    Run the following command in your terminal.
-
+    **Option A: Terminal Launch (Quick)**
     ```bash
     /Applications/Claude.app/Contents/MacOS/Claude
     ```
+
+    **Option B: Alfred Workflow (Recommended)**
+    
+    For a more convenient launch experience that supports multiple Claude instances, see our [Alfred Setup Guide](docs/alfred-setup.md).
 
     > ⚠️ **Warning**: Alternatively, you can [manually grant calendar access](docs/install.md#method-2-manually-grant-calendar-access), but this involves modifying system files and should only be done if you understand the risks involved.
 
