@@ -43,62 +43,183 @@ def get_calendar_manager() -> CalendarManager:
 
 @mcp.resource("calendars://list")
 def get_calendars() -> str:
-    """List all available calendars that can be used with calendar operations."""
+    """Get structured calendar information as JSON for use by other tools."""
+    import json
+    
     try:
         manager = get_calendar_manager()
-        calendars_by_source = manager.list_calendars_with_sources()
+        calendars = manager.list_calendars()  # Get raw EKCalendar objects
+        default_calendar = manager.event_store.defaultCalendarForNewEvents()
+        default_id = default_calendar.uniqueIdentifier() if default_calendar else None
         
-        if not calendars_by_source:
-            return "No calendars found"
-
-        result = "📅 **Available Calendars by Account:**\n\n"
+        calendar_data = []
         
-        for source_name, calendars in calendars_by_source.items():
-            result += f"**{source_name}**\n"
+        for cal in calendars:
+            source = cal.source()
+            source_type = source.sourceType() if source else None
             
-            for calendar in calendars:
-                calendar_name = calendar["name"]
-                
-                # Add default indicator
-                if calendar["is_default"]:
-                    result += f"  • {calendar_name} ⭐ (default)\n"
-                else:
-                    result += f"  • {calendar_name}\n"
+            # Map source types to readable names
+            source_type_names = {
+                0: "Local",
+                1: "Exchange", 
+                2: "CalDAV",
+                3: "MobileMe",
+                4: "Subscribed",
+                5: "Birthdays"
+            }
             
-            result += "\n"
+            calendar_info = {
+                "name": cal.title(),
+                "id": cal.uniqueIdentifier(),
+                "source_name": source.title() if source else "Unknown Source",
+                "source_type": source_type,
+                "source_type_name": source_type_names.get(source_type, f"Unknown ({source_type})"),
+                "is_default": cal.uniqueIdentifier() == default_id,
+                "is_editable": cal.allowsContentModifications(),
+                "supports_events": cal.supportedEventAvailabilities() > 0,
+                "is_subscribed": source_type == 4 if source_type is not None else False,
+                "is_team_calendar": source_type == 1 if source_type is not None else False,
+                "is_birthdays": source_type == 5 if source_type is not None else False
+            }
+            
+            calendar_data.append(calendar_info)
         
-        return result.rstrip()
+        return json.dumps({
+            "calendars": calendar_data,
+            "total_count": len(calendar_data)
+        }, indent=2)
         
     except ValueError as e:
-        return str(e)
+        return json.dumps({"error": str(e)})
     except Exception as e:
-        return f"Error listing calendars: {str(e)}"
+        return json.dumps({"error": f"Error listing calendars: {str(e)}"})
+
+
+
+@mcp.resource("groups://list")
+def get_calendar_groups() -> str:
+    """Get structured calendar group information as JSON for use by other tools."""
+    import json
+    
+    try:
+        from .groups.group_manager import CalendarGroupManager
+        from .groups.calendar_integration import GroupCalendarBridge
+        
+        calendar_manager = get_calendar_manager()
+        group_manager = CalendarGroupManager()
+        bridge = GroupCalendarBridge(calendar_manager, group_manager)
+        
+        groups = group_manager.list_groups()
+        
+        group_data = []
+        for group in groups:
+            try:
+                # Get calendar names for this group
+                calendar_names = bridge.resolve_calendar_ids_to_names(group.calendar_ids)
+                
+                group_info = {
+                    "name": group.name,
+                    "description": group.description,
+                    "calendar_count": len(group.calendar_ids),
+                    "calendar_names": calendar_names,
+                    "calendar_ids": group.calendar_ids,
+                    "created": group.created.isoformat(),
+                    "modified": group.modified.isoformat()
+                }
+                
+                group_data.append(group_info)
+                
+            except Exception as e:
+                # Handle individual group errors gracefully
+                group_info = {
+                    "name": group.name,
+                    "description": group.description,
+                    "calendar_count": len(group.calendar_ids),
+                    "calendar_names": [],
+                    "calendar_ids": group.calendar_ids,
+                    "created": group.created.isoformat(),
+                    "modified": group.modified.isoformat(),
+                    "error": f"Error resolving calendars: {str(e)}"
+                }
+                group_data.append(group_info)
+        
+        return json.dumps({
+            "groups": group_data,
+            "total_count": len(group_data)
+        }, indent=2)
+        
+    except Exception as e:
+        return json.dumps({"error": f"Error listing groups: {str(e)}"})
 
 
 @mcp.tool()
 async def list_calendars() -> str:
-    """List all available calendars grouped by account/source."""
+    """List all available calendars with their properties and account information.
+    
+    When displaying calendars to the user, format them nicely and include:
+    - Calendar name and account/source
+    - Type indicators (default, team, subscribed, birthdays, CalDAV, etc.)
+    - Access permissions (read-only vs editable)
+    - Group calendars by account/source for better organization
+    - Use appropriate emojis and formatting for visual clarity
+    
+    The raw data includes calendar names, source information, types, and permissions."""
     try:
         manager = get_calendar_manager()
-        calendars_by_source = manager.list_calendars_with_sources()
+        calendars = manager.list_calendars()  # Get raw EKCalendar objects
+        default_calendar = manager.event_store.defaultCalendarForNewEvents()
+        default_id = default_calendar.uniqueIdentifier() if default_calendar else None
         
-        if not calendars_by_source:
+        if not calendars:
             return "No calendars found"
 
-        result = "📅 **Available Calendars by Account:**\n\n"
+        # Group by source and collect detailed info
+        grouped = {}
+        for cal in calendars:
+            source = cal.source()
+            source_name = source.title() if source else "Unknown Source"
+            
+            if source_name not in grouped:
+                grouped[source_name] = []
+            
+            # Determine calendar type and properties
+            source_type = source.sourceType() if source else None
+            properties = []
+            
+            if cal.uniqueIdentifier() == default_id:
+                properties.append("default")
+            
+            if source_type == 1:  # Exchange
+                properties.append("team")
+            elif source_type == 4:  # Subscribed
+                properties.append("subscribed")
+            elif source_type == 5:  # Birthdays
+                properties.append("birthdays")
+            elif source_type == 2:  # CalDAV
+                properties.append("CalDAV")
+            
+            if not cal.allowsContentModifications():
+                properties.append("read-only")
+            else:
+                properties.append("editable")
+            
+            calendar_info = {
+                "name": cal.title(),
+                "id": cal.uniqueIdentifier(),
+                "properties": properties,
+                "source_type": source_type
+            }
+            
+            grouped[source_name].append(calendar_info)
         
-        for source_name, calendars in calendars_by_source.items():
-            result += f"**{source_name}**\n"
-            
-            for calendar in calendars:
-                calendar_name = calendar["name"]
-                
-                # Add default indicator
-                if calendar["is_default"]:
-                    result += f"  • {calendar_name} ⭐ (default)\n"
-                else:
-                    result += f"  • {calendar_name}\n"
-            
+        # Build result string with calendar data
+        result = f"Found {len(calendars)} calendars across {len(grouped)} accounts:\n\n"
+        
+        for source_name, calendar_list in grouped.items():
+            result += f"Account: {source_name}\n"
+            for cal_info in calendar_list:
+                properties_text = ", ".join(cal_info["properties"])
+                result += f"  - {cal_info['name']} ({properties_text})\n"
             result += "\n"
         
         return result.rstrip()
@@ -114,6 +235,10 @@ async def list_events(start_date: datetime, end_date: datetime, calendar_name: s
     The start_date should always use the time such that it represents the beginning of that day (00:00:00).
     The end_date should always use the time such that it represents the end of that day (23:59:59).
     This way, range based searches are always inclusive and can locate all events in that date range.
+
+    IMPORTANT: Display the output exactly as returned without reformatting. 
+    The output is already formatted for optimal readability.
+    Do not translate, summarize, or reformat the response.
 
     Args:
         start_date: Start date in ISO8601 format (YYYY-MM-DDT00:00:00).
