@@ -13,9 +13,9 @@ from ..ical import CalendarManager
 
 # Cache for group-related managers
 @lru_cache(maxsize=None)
-def get_group_manager() -> CalendarGroupManager:
+def get_group_manager(calendar_manager=None) -> CalendarGroupManager:
     """Get or initialize the group manager."""
-    return CalendarGroupManager()
+    return CalendarGroupManager(calendar_manager=calendar_manager)
 
 
 @lru_cache(maxsize=None)

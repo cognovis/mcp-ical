@@ -19,7 +19,8 @@ class GroupStorage:
             storage_path: Path to store groups file. Defaults to user config directory.
         """
         if storage_path is None:
-            config_dir = Path.home() / ".config" / "mcp-ical"
+            # Use proper macOS Application Support directory
+            config_dir = Path.home() / "Library" / "Application Support" / "mcp-ical"
             config_dir.mkdir(parents=True, exist_ok=True)
             storage_path = config_dir / "calendar_groups.json"
         

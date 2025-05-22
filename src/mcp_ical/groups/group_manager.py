@@ -10,13 +10,15 @@ from .group_models import CalendarGroup, GroupsSchema
 class CalendarGroupManager:
     """Manage calendar group operations with persistent storage."""
     
-    def __init__(self, storage: Optional[GroupStorage] = None):
+    def __init__(self, storage: Optional[GroupStorage] = None, calendar_manager=None):
         """Initialize group manager with storage backend.
         
         Args:
             storage: GroupStorage instance. If None, creates default instance.
+            calendar_manager: CalendarManager instance for validation. Optional.
         """
         self.storage = storage or GroupStorage()
+        self.calendar_manager = calendar_manager
         self._schema_cache: Optional[GroupsSchema] = None
     
     def _load_schema(self) -> GroupsSchema:
@@ -228,18 +230,22 @@ class CalendarGroupManager:
     def validate_calendar_exists(self, calendar_id: str) -> bool:
         """Validate that a calendar ID exists.
         
-        Note: This is a placeholder implementation. In a real system,
-        this would check with the actual calendar backend.
-        
         Args:
             calendar_id: ID of calendar to validate.
             
         Returns:
-            True if calendar exists (always True in this placeholder).
+            True if calendar exists, False otherwise.
         """
-        # Placeholder implementation - always returns True
-        # In real implementation, this would check with CalendarManager
-        return isinstance(calendar_id, str) and len(calendar_id.strip()) > 0
+        if not isinstance(calendar_id, str) or not calendar_id.strip():
+            return False
+        
+        # If calendar manager is available, use it for real validation
+        if self.calendar_manager is not None:
+            calendar = self.calendar_manager._find_calendar_by_id(calendar_id)
+            return calendar is not None
+        
+        # Fallback: basic string validation only
+        return True
     
     def get_groups_containing_calendar(self, calendar_id: str) -> List[CalendarGroup]:
         """Get all groups that contain a specific calendar.

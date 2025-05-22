@@ -19,7 +19,7 @@ class GroupCalendarBridge:
             group_manager: CalendarGroupManager instance. If None, creates default instance.
         """
         self.calendar_manager = calendar_manager
-        self.group_manager = group_manager or CalendarGroupManager()
+        self.group_manager = group_manager or CalendarGroupManager(calendar_manager=calendar_manager)
     
     def get_events_by_group(self, group_name: str, start_date: datetime, end_date: datetime) -> List[Event]:
         """Get all events from calendars in a group within a date range.
