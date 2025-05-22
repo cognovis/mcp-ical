@@ -3,10 +3,12 @@
 from .storage import GroupStorage
 from .group_models import CalendarGroup, GroupsSchema
 from .group_manager import CalendarGroupManager
+from .calendar_integration import GroupCalendarBridge
 
 __all__ = [
     "GroupStorage",
     "CalendarGroup",
     "GroupsSchema",
     "CalendarGroupManager",
+    "GroupCalendarBridge",
 ]
